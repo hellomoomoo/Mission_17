@@ -18,6 +18,63 @@ def load_model():
     classifier = pipeline("image-classification", model="google/vit-base-patch16-224")
     return classifier
 
+def get_emoji(label):
+    label_lower = label.lower()
+
+    # 동물
+    if any(word in label_lower for word in ['dog', 'puppy', 'pug', 'corgi', 'retriever']):
+        return '🐶'
+    elif any(word in label_lower for word in ['cat', 'kitten', 'tabby']):
+        return '🐱'
+    elif any(word in label_lower for word in ['bird', 'parrot', 'eagle', 'owl']):
+        return '🦅'
+    elif any(word in label_lower for word in ['fish', 'goldfish', 'shark']):
+        return '🐟'
+    elif any(word in label_lower for word in ['bear', 'panda']):
+        return '🐻'
+    elif any(word in label_lower for word in ['elephant']):
+        return '🐘'
+    elif any(word in label_lower for word in ['monkey', 'ape', 'gorilla']):
+        return '🐵'
+    
+    # 음식
+    elif any(word in label_lower for word in ['pizza', 'burger', 'sandwich', 'hot dog', 'taco']):
+        return '🍕'
+    elif any(word in label_lower for word in ['cake', 'cupcake', 'dessert', 'ice cream']):
+        return '🍰'
+    elif any(word in label_lower for word in ['coffee', 'espresso', 'latte']):
+        return '☕'
+    elif any(word in label_lower for word in ['beer', 'wine', 'cocktail']):
+        return '🍺'
+    
+    # 차량
+    elif any(word in label_lower for word in ['car', 'sports car', 'convertible', 'racer']):
+        return '🚗'
+    elif any(word in label_lower for word in ['truck', 'pickup']):
+        return '🚚'
+    elif any(word in label_lower for word in ['bus', 'school bus']):
+        return '🚌'
+    elif any(word in label_lower for word in ['plane', 'airliner', 'aircraft']):
+        return '✈️'
+    elif any(word in label_lower for word in ['boat', 'ship', 'vessel']):
+        return '🚢'
+    
+    # 의류
+    elif any(word in label_lower for word in ['suit', 'tie', 'gown', 'dress']):
+        return '👔'
+    elif any(word in label_lower for word in ['shoe', 'sneaker', 'boot']):
+        return '👟'
+    
+    # 자연
+    elif any(word in label_lower for word in ['flower', 'rose', 'daisy']):
+        return '🌸'
+    elif any(word in label_lower for word in ['tree', 'plant']):
+        return '🌳'
+    
+    # 기본값
+    else:
+        return '🎯'
+
 # 메인 타이틀
 st.title("👩‍🔬✨ 이미지 분류 AI")
 st.write("이미지를 업로드하면 어떤 이미지인지 알려드려요!🥨❣")
@@ -49,7 +106,8 @@ if uploaded_file is not None:
 
         # Top 1 결과 강조
         top_result = results[0]
-        st.success(f"**{top_result['label']}** ({top_result['score']*100:.2f}%)")
+        emoji = get_emoji(top_result['label'])
+        st.success(f"**{emoji} **({top_result['score']*100:.2f}%)")
 
         # 상위 5개 결과를 DataFrame으로 변환
         st.write("---")
@@ -84,4 +142,5 @@ if uploaded_file is not None:
         st.write("---")
         st.write("**상세 결과:**")
         for i, result in enumerate(results, 1):
-            st.write(f"{i}. {result['label']}: {result['score']*100:.2f}%")
+            emoji = get_emoji(result['label'])
+            st.write(f"{i}. {emoji} {result['label']}: {result['score']*100:.2f}%")
