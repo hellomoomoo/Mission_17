@@ -7,7 +7,9 @@ import pandas as pd
 # 페이지 설정
 st.set_page_config(
     page_title="이미지 분류 AI Application", # 브라우저 탭에 표시될 제목
-    layout="centered",      # 페이지 레이아웃 / centered는 중앙 정렬
+    layout="wide",      
+    # 페이지 레이아웃 / centered(중앙 정렬)로 했다가 너무 좁아보여서 수정
+    # centered는 페이지를 좁게 고정시킨다고 함
     page_icon="👩‍🔬✨"       # 웹 아이콘
 )
 
@@ -78,10 +80,13 @@ def get_emoji(label):
 # 모델 로드
 classifier = load_model()   # 웹 시작시에 한 번만 로드됨
 
-# 화면 비율은 1:1 비율로 2개 컬럼으로 나눔
-left_col, right_col = st.columns([1, 1])
+# 가로로 분할
+left_col, right_col = st.columns([1, 1])    # 왼쪽 컬럼을 좀 더 넓게 설정
 
 # 왼쪽 컬럼: 입력 및 업로드
+# with문 안의 모든 요소가 해당 컬럼 안에 들어감
+# 대신 with문을 벗어나면 전체 너비로 돌아옴
+
 with left_col:
     # 타이틀
     st.title("👩‍🔬✨ 이미지 분류 AI")
@@ -121,21 +126,24 @@ with left_col:
 
 # 오른쪽 컬럼: 이미지 미리보기
 
+with right_col:
 # 이미지가 있으면 (업로드 or 촬영)
-if len(images) > 0:
-    st.markdown("### 📷 업로드된 이미지")
-    st.write(f"총 {len(images)}장의 이미지가 업로드되었습니다!")
+    if len(images) > 0:
+        st.markdown("### 📷 이미지")
+        st.write(f"총 {len(images)}장의 이미지가 업로드되었습니다!")
 
-    # 각 이미지를 순서대로 표시
-    for idx, image in enumerate(images, 1):
-        # enumerate(images, 1): 인덱스를 1부터 시작 (0 아님)
-        st.image(
-            image,
-            caption=f"이미지 {idx}",    # 이미지 아래 캡션
-            width=500 # 고정 너비 (픽셀 단위)
-        )
-        if idx < len(images): 
-            st.write("---")  # 이미지 사이에 구분선 추가
+        # 각 이미지를 순서대로 표시
+        for idx, image in enumerate(images, 1):
+            # enumerate(images, 1): 인덱스를 1부터 시작 (0 아님)
+            st.image(
+                image,
+                caption=f"이미지 {idx}",    # 이미지 아래 캡션
+                width=300 # 고정 너비 (픽셀 단위)
+            )
+            if idx < len(images): 
+                st.write("---")  # 이미지 사이에 구분선 추가
+
+            
 
         
 
@@ -154,14 +162,14 @@ if len(images) > 0:
 
         # 각 이미지마다 분류
         for idx, image in enumerate(images, 1):
-            st.write(f"이미지 {idx}")
+            st.write(f"이미지 {idx} 분류 결과")
 
-            # 이미지 표시
+            # 이미지 다시 표시 (결과랑 같이 보기)
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 st.image(image, caption=f"이미지 {idx}", width=500)
 
-            # 분류 수행
+            # 분류 수행 (로딩 스피너 표시)
             with st.spinner(f"이미지 {idx} 분류 중"):
                 results = classifier(image, top_k=5)
 
@@ -171,7 +179,9 @@ if len(images) > 0:
             # Top 1 결과 강조 (이모지 추가 + Label 추가)
             top_result = results[0]
             emoji = get_emoji(top_result['label'])
-            st.success(f"{emoji} **{top_result['label']}** ({top_result['score']*100:.2f}%)")
+            st.success(
+                f"{emoji} **{top_result['label']}** ({top_result['score']*100:.2f}%)"
+                )
 
             # Plotly 차트
             df = pd.DataFrame(results)
@@ -179,24 +189,36 @@ if len(images) > 0:
             
             fig = px.bar(
                 df,
-                x='score_percent',
-                y='label',
-                orientation='h',
-                labels={'score_percent': '확률 (%)', 'label': '분류'},
-                title=f'이미지 {idx} - Top 5 예측 결과',
-                color='score_percent',
-                color_continuous_scale='Blues'
+                x='score_percent',  # x축 확률 (퍼센테이지)
+                y='label',  # y축 분류명
+                orientation='h',    # h는 가로 막대 그래프 / v는 세로 막대 그래프
+                labels={
+                    'score_percent': '확률 (%)',    # x축 레이블 이름
+                    'label': '분류명'   # y축 레이블 이름
+                    },
+                title=f'이미지 {idx} - Top 5 예측 결과',    # 차트 제목
+                color='score_percent',  # 막대 색상을 score_percent에 따라 다르게 설정
+                color_continuous_scale='Blues'  # 색상 팔레트를 파란색 계열로 설정
             )
             
+            # 차트 레이아웃 조정
             fig.update_layout(
-                yaxis={'categoryorder': 'total ascending'},
+                yaxis={
+                    'categoryorder': 'total ascending'  # y축 정렬 (작은 값이 위로)
+                    },
                 height=300  # 여러 개니까 높이 줄임
             )
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(
+                fig, 
+                use_container_width=True
+                )
             
             # 상세 결과
-            with st.expander("상세 결과 보기"):
+            with st.expander("📝 상세 결과 보기"):  # expander는 클릭하면 내용 펼쳐지는 거
                 for i, result in enumerate(results, 1):
                     emoji = get_emoji(result['label'])
-                    st.write(f"{i}. {emoji} {result['label']}: {result['score']*100:.2f}%")
+                    st.write(
+                        f"{i}. {emoji} {result['label']}: "
+                        f"{result['score']*100:.2f}%"
+                    )
